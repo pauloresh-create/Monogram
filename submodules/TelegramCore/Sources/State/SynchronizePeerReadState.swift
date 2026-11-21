@@ -2,6 +2,7 @@ import Foundation
 import Postbox
 internal import TelegramApi
 import SwiftSignalKit
+import MonoSettings // MARK: Monogram
 
 
 private enum PeerReadStateMarker: Equatable {
@@ -252,6 +253,10 @@ private func validatePeerReadState(network: Network, postbox: Postbox, stateMana
 }
 
 private func pushPeerReadState(network: Network, postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, readState: PeerReadState) -> Signal<PeerReadState, PeerReadStateValidationError> {
+    // MARK: Monogram — ghost mode: keep the read mark local unless the user asked to send it
+    if MonoSettings.shared.ghostApplies(MonoFeatureKey.hideRead, peerId: peerId.toInt64()) && !MonoSettings.shared.consumeReadPermission(peerId: peerId.toInt64()) {
+        return .single(readState)
+    }
     if peerId.namespace == Namespaces.Peer.SecretChat {
         // Decide whether a request is needed before looking the peer up: inputSecretChat goes
         // through loadedPeerWithId, which never emits when the peer row is missing and fails
@@ -451,5 +456,16 @@ func synchronizePeerReadState(network: Network, postbox: Postbox, stateManager: 
             |> then(validatePeerReadState(network: network, postbox: postbox, stateManager: stateManager, peerId: peerId))
         }
         return signal
+    }
+}
+
+// MARK: Monogram
+/// Sends the chat's local read mark to the server once, even while ghost mode hides reads.
+/// Used by "Mark as read on server" and by "read on reply".
+public func monoSendReadStateToServer(account: Account, peerId: PeerId) -> Signal<Never, NoError> {
+    MonoSettings.shared.grantReadPermission(peerId: peerId.toInt64())
+    return pushPeerReadState(network: account.network, postbox: account.postbox, stateManager: account.stateManager, peerId: peerId, willValidate: false)
+    |> `catch` { _ -> Signal<Never, NoError> in
+        return .complete()
     }
 }

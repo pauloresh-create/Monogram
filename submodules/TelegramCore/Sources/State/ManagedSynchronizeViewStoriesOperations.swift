@@ -3,6 +3,7 @@ import Postbox
 import SwiftSignalKit
 internal import TelegramApi
 import MtProtoKit
+import MonoSettings // MARK: Monogram
 
 private final class ManagedSynchronizeViewStoriesOperationsHelper {
     var operationDisposables: [PeerId: (Int32, Disposable)] = [:]
@@ -120,6 +121,10 @@ func managedSynchronizeViewStoriesOperations(postbox: Postbox, network: Network,
 
 private func pushStoriesAreSeen(postbox: Postbox, network: Network, stateManager: AccountStateManager, peer: Peer, operation: SynchronizeViewStoriesOperation) -> Signal<Void, NoError> {
     guard let inputPeer = apiInputPeer(peer) else {
+        return .complete()
+    }
+    // MARK: Monogram — anonymous stories: the view stays local
+    if MonoSettings.shared.ghostApplies(MonoFeatureKey.anonymousStories, peerId: peer.id.toInt64()) {
         return .complete()
     }
     return network.request(Api.functions.stories.readStories(peer: inputPeer, maxId: operation.storyId))

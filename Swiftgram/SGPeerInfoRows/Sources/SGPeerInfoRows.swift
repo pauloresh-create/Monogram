@@ -1,4 +1,5 @@
 import SGSimpleSettings
+import MonoSettingsUI // MARK: Monogram
 import SGStrings
 import CountrySelectionUI
 import Foundation
@@ -184,6 +185,10 @@ func sgPeerInfoSettingsItems(context: AccountContext, paymentsEnabled: Bool, pre
     }
     items.append(PeerInfoScreenDisclosureItem(id: 1, label: swiftgramLabel, text: "Swiftgram", icon: PresentationResourcesSettings.swiftgram, action: {
         interaction.openSettings(.swiftgram)
+    }))
+    // MARK: Monogram
+    items.append(PeerInfoScreenDisclosureItem(id: 2, text: "Monogram", icon: MonoSettingsIcon.image, action: {
+        interaction.openSettings(.monogram)
     }))
     return items
 }

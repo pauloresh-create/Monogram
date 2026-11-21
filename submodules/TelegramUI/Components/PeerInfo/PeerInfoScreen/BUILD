@@ -9,6 +9,7 @@ sgdeps = [
     "//Swiftgram/SGRegDate:SGRegDate",
     "//Swiftgram/SGRegDateScheme:SGRegDateScheme",
     "//Swiftgram/SGDebugUI:SGDebugUI",
+    "//Monogram/MonoSettingsUI:MonoSettingsUI", # MARK: Monogram
 ]
 #
 # MARK: Swiftgram

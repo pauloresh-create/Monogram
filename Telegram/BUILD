@@ -343,7 +343,7 @@ alternate_icon_folders = [
 ]
 #
 
-composer_icon_folders = ["Swiftgram"] # MARK: Swiftgram
+composer_icon_folders = ["Monogram"] # MARK: Monogram (was Swiftgram)
 
 [
     filegroup(
@@ -662,7 +662,7 @@ plist_fragment(
     template =
     """
     <key>CFBundleDisplayName</key>
-    <string>Swiftgram</string>
+    <string>Monogram</string>
     """
 )
 #

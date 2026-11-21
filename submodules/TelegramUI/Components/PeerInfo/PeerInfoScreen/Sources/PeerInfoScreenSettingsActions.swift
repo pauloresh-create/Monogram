@@ -1,6 +1,7 @@
 import SGStrings
 import SGSettingsUI
 import Foundation
+import MonoSettingsUI // MARK: Monogram
 import UIKit
 import Display
 import AccountContext
@@ -56,6 +57,9 @@ extension PeerInfoScreenNode {
         switch section {
         case .swiftgram:
             self.controller?.push(sgSettingsController(context: self.context))
+        // MARK: Monogram
+        case .monogram:
+            self.controller?.push(monoSettingsController(context: self.context))
         case .swiftgramPro:
             if self.context.sharedContext.immediateSGStatus.status > 1 {
                 self.controller?.push(self.context.sharedContext.makeSGProController(context: self.context))

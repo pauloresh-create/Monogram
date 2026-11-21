@@ -3,6 +3,7 @@ import Postbox
 internal import TelegramApi
 import SwiftSignalKit
 import Emoji
+import MonoSettings // MARK: Monogram
 
 public enum EnqueueMessageGrouping {
     case none
@@ -759,6 +760,10 @@ private func opportunisticallyTransformOutgoingMedia(network: Network, postbox: 
 }
 
 public func enqueueMessages(account: Account, peerId: PeerId, messages: [EnqueueMessage]) -> Signal<[MessageId?], NoError> {
+    // MARK: Monogram — "read on reply": answering in a chat sends its read mark despite ghost mode
+    if !messages.isEmpty && MonoSettings.shared.isEnabled(MonoFeatureKey.readOnReply) && MonoSettings.shared.ghostApplies(MonoFeatureKey.hideRead, peerId: peerId.toInt64()) {
+        let _ = monoSendReadStateToServer(account: account, peerId: peerId).startStandalone()
+    }
     let signal: Signal<[(Bool, EnqueueMessage)], NoError>
     if let transformOutgoingMessageMedia = account.transformOutgoingMessageMedia {
         signal = opportunisticallyTransformOutgoingMedia(network: account.network, postbox: account.postbox, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messages: messages, userInteractive: true)

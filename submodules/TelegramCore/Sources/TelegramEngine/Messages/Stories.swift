@@ -2,6 +2,7 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 internal import TelegramApi
+import MonoSettings // MARK: Monogram
 
 public enum EngineStoryInputMedia {
     case image(dimensions: PixelDimensions, data: Data, stickers: [TelegramMediaFile])
@@ -2108,6 +2109,10 @@ func _internal_deleteStories(account: Account, peerId: PeerId, ids: [Int32]) -> 
 }
 
 func _internal_markStoryAsSeen(account: Account, peerId: PeerId, id: Int32, asPinned: Bool) -> Signal<Never, NoError> {
+    // MARK: Monogram — anonymous stories: pinned story views are not counted either
+    if asPinned && MonoSettings.shared.ghostApplies(MonoFeatureKey.anonymousStories, peerId: peerId.toInt64()) {
+        return .complete()
+    }
     if asPinned {
         return account.postbox.transaction { transaction -> Api.InputPeer? in
             return transaction.getPeer(peerId).flatMap(apiInputPeer)

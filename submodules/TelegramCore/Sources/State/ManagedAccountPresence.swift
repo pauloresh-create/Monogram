@@ -3,6 +3,7 @@ internal import TelegramApi
 import Postbox
 import SwiftSignalKit
 import MtProtoKit
+import MonoSettings // MARK: Monogram
 
 private typealias SignalKitTimer = SwiftSignalKit.Timer
 
@@ -42,7 +43,9 @@ private final class AccountPresenceManagerImpl {
         self.onlineTimer?.invalidate()
     }
     
-    private func updatePresence(_ isOnline: Bool) {
+    private func updatePresence(_ requestedOnline: Bool) {
+        // MARK: Monogram — ghost mode keeps reporting offline
+        let isOnline = requestedOnline && !MonoSettings.shared.isEnabled(MonoFeatureKey.hideOnline)
         let request: Signal<Api.Bool, MTRpcError>
         if isOnline {
             let timer = SignalKitTimer(timeout: 30.0, repeat: false, completion: { [weak self] in

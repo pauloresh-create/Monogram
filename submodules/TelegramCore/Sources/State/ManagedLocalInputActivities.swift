@@ -3,6 +3,7 @@ import Postbox
 import SwiftSignalKit
 internal import TelegramApi
 import MtProtoKit
+import MonoSettings // MARK: Monogram
 
 
 public struct PeerActivitySpace: Hashable {
@@ -146,6 +147,13 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
         if let peer = transaction.getPeer(peerId) {
             if peerId == accountPeerId {
                 return .complete()
+            }
+            // MARK: Monogram — ghost mode: no typing / recording indicators (group call speaking still goes out)
+            if MonoSettings.shared.ghostApplies(MonoFeatureKey.hideTyping, peerId: peerId.toInt64()) {
+                if case .speakingInGroupCall? = activity {
+                } else {
+                    return .complete()
+                }
             }
             if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                 if let activity = activity {

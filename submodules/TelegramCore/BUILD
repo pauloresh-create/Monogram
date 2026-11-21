@@ -5,6 +5,7 @@ load("@build_bazel_rules_apple//apple/testing/default_runner:ios_test_runner.bzl
 sgdeps = [
     "//Swiftgram/SGGTranslate:SGGTranslate",
     "//Swiftgram/SGSimpleSettings:SGSimpleSettings",
+    "//Monogram/MonoSettings:MonoSettings", # MARK: Monogram
     "//Swiftgram/SGWebSettingsScheme:SGWebSettingsScheme",
     "//Swiftgram/SGGHSettingsScheme:SGGHSettingsScheme",
     "//Swiftgram/SGConfig:SGConfig",

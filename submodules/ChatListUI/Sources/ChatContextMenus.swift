@@ -15,6 +15,7 @@ import TelegramPresentationData
 import TelegramStringFormatting
 import ChatTimerScreen
 import NotificationPeerExceptionController
+import MonoSettings // MARK: Monogram
 
 func archiveContextMenuItems(context: AccountContext, group: EngineChatList.Group, chatListController: ChatListControllerImpl?) -> Signal<[ContextMenuItem], NoError> {
     let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
@@ -386,6 +387,24 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             }
                         }
                         
+                        // MARK: Monogram — ghost mode actions
+                        if !isSavedMessages {
+                            let monoSettings = MonoSettings.shared
+                            if monoSettings.ghostApplies(MonoFeatureKey.hideRead, peerId: peerId.toInt64()) {
+                                items.append(.action(ContextMenuActionItem(text: "Прочитать на сервере", icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Read"), color: theme.contextMenu.primaryColor) }, action: { _, f in
+                                    let _ = monoSendReadStateToServer(account: context.account, peerId: peerId).startStandalone()
+                                    f(.default)
+                                })))
+                            }
+                            if monoSettings.isEnabled(MonoFeatureKey.ghostExceptions) {
+                                let isException = monoSettings.isGhostException(peerId: peerId.toInt64())
+                                items.append(.action(ContextMenuActionItem(text: isException ? "Вернуть призрак для чата" : "Не прятаться в этом чате", icon: { theme in generateTintedImage(image: UIImage(bundleImageName: isException ? "Chat/Context Menu/EyeLocked" : "Chat/Context Menu/Eye"), color: theme.contextMenu.primaryColor) }, action: { _, f in
+                                    monoSettings.setGhostException(peerId: peerId.toInt64(), !isException)
+                                    f(.default)
+                                })))
+                            }
+                        }
+
                         let archiveEnabled = !isSavedMessages && peerId != EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(777000)) /* && peerId == context.account.peerId // MARK: Swiftgram */
                         if let group = peerGroup {
                             if archiveEnabled {
