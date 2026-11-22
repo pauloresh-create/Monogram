@@ -1,6 +1,19 @@
 {
   "fill": {
-    "solid": "srgb:0.03922,0.03922,0.03922,1.00000"
+    "linear-gradient": [
+      "srgb:0.03922,0.03922,0.03922,1.00000",
+      "srgb:0.03922,0.03922,0.03922,1.00000"
+    ],
+    "orientation": {
+      "start": {
+        "x": 0.5,
+        "y": 0
+      },
+      "stop": {
+        "x": 0.5,
+        "y": 0.7
+      }
+    }
   },
   "groups": [
     {
@@ -12,7 +25,7 @@
         }
       ],
       "shadow": {
-        "kind": "none",
+        "kind": "neutral",
         "opacity": 0
       },
       "translucency": {
