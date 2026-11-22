@@ -87,7 +87,8 @@ jobs:
             --buildNumber="$BUILD_NUMBER" 2>&1 | tee build.log
           test "${PIPESTATUS[0]}" -eq 0
           mkdir -p out
-          cp bazel-bin/Telegram/Telegram.ipa out/Monogram.ipa
+          # The app target is //Telegram:Swiftgram, so the IPA is Swiftgram.ipa
+          cp bazel-bin/Telegram/Swiftgram.ipa out/Monogram.ipa
 
       - name: Upload build log
         if: always()
@@ -108,9 +109,15 @@ jobs:
             echo "::error::Set the IPA_PASSWORD repository secret; the IPA is never uploaded unencrypted"
             exit 1
           fi
-          brew install sevenzip >/dev/null
+          export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+          command -v 7zz >/dev/null || brew install sevenzip
+          command -v 7zz >/dev/null || { echo "::error::7zz (sevenzip) is not available"; exit 1; }
           cd /Users/Shared/telegram-ios/out
+          ls -la Monogram.ipa
           7zz a -tzip -mem=AES256 -p"$IPA_PASSWORD" Monogram-ipa.zip Monogram.ipa >/dev/null
+          # the archive must list the IPA and accept the password before the plain IPA is removed
+          7zz t -p"$IPA_PASSWORD" Monogram-ipa.zip >/dev/null
+          ls -la Monogram-ipa.zip
           rm Monogram.ipa
 
       - uses: actions/upload-artifact@v4
