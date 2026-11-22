@@ -599,8 +599,17 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
         })
         NSLog("[SG.Launch] Resolving app-group container") // MARK: Swiftgram
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        var maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
         NSLog("[SG.Launch] App-group container resolved: \(maybeAppGroupUrl != nil)") // MARK: Swiftgram
+        // MARK: Monogram — a build signed with a free Apple ID (Sideloadly/AltStore personal team)
+        // has no App Groups entitlement, so the group container is nil and launch would stop on
+        // "Error 2". Keep the data in the app's own container instead; extensions then can't share it.
+        if maybeAppGroupUrl == nil, let supportUrl = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            let fallbackUrl = supportUrl.appendingPathComponent("MonogramAppGroup", isDirectory: true)
+            let _ = try? FileManager.default.createDirectory(at: fallbackUrl, withIntermediateDirectories: true, attributes: nil)
+            maybeAppGroupUrl = fallbackUrl
+            NSLog("[Monogram.Launch] No app group entitlement, using the app container")
+        }
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
