@@ -1,5 +1,5 @@
 # MARK: Monogram
-# Builds an unsigned IPA (the repo's fake provisioning profiles have expired).
+# Builds an IPA signed with the repo's fake certificate (profiles refreshed in CI).
 # Re-sign it with your own Apple ID (Sideloadly / AltStore) before installing;
 # set a unique bundle ID there.
 #
@@ -60,9 +60,9 @@ jobs:
           })
           json.dump(cfg, open("monogram-configuration.json", "w"), indent=2)
           EOF
-          # Swiftgram's extra extension has no fake profile; reuse the Share one.
-          P=build-system/fake-codesigning/profiles
-          [ -f "$P/SGActionRequestHandler.mobileprovision" ] || cp "$P/Share.mobileprovision" "$P/SGActionRequestHandler.mobileprovision"
+          # The fake profiles expired on 2026-10-30; extend and re-sign them,
+          # and add one for Swiftgram's SGActionRequestHandler extension.
+          python3 Monogram/ci/refresh_fake_profiles.py build-system/fake-codesigning ph.telegra.Telegraph
 
       - name: Copy sources to a stable path
         run: |
@@ -83,7 +83,6 @@ jobs:
             --continueOnError \
             --configurationPath=monogram-configuration.json \
             --codesigningInformationPath=build-system/fake-codesigning \
-            --disableProvisioningProfiles \
             --configuration=release_arm64 \
             --buildNumber="$BUILD_NUMBER" 2>&1 | tee build.log
           test "${PIPESTATUS[0]}" -eq 0
