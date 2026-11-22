@@ -1,5 +1,5 @@
 # MARK: Monogram
-# Builds an IPA signed with the repo's fake certificates.
+# Builds an unsigned IPA (the repo's fake provisioning profiles have expired).
 # Re-sign it with your own Apple ID (Sideloadly / AltStore) before installing;
 # set a unique bundle ID there.
 #
@@ -15,7 +15,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # Xcode 27 image (macOS 27, Apple Silicon); versions.json pins Xcode 27.1
+    runs-on: xcode-27
     timeout-minutes: 360
 
     steps:
@@ -82,6 +83,7 @@ jobs:
             --continueOnError \
             --configurationPath=monogram-configuration.json \
             --codesigningInformationPath=build-system/fake-codesigning \
+            --disableProvisioningProfiles \
             --configuration=release_arm64 \
             --buildNumber="$BUILD_NUMBER" 2>&1 | tee build.log
           test "${PIPESTATUS[0]}" -eq 0
