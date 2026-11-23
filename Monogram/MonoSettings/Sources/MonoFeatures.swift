@@ -165,15 +165,15 @@ public enum MonoFeatures {
         MonoFeature(K.confirmActions, "Подтверждения", "Спрашивать перед звонком, отправкой стикера, GIF или голосового", group: .convenience),
         MonoFeature(K.quickActions, "Быстрые действия", "Двойной тап по сообщению, копирование части текста, «В Избранное» в один тап", group: .convenience, defaultValue: true),
         MonoFeature(K.extendedProfile, "Подробный профиль", "ID, дата-центр, примерная дата регистрации и первое сообщение в чате", group: .convenience, defaultValue: true),
-        MonoFeature(K.jumpToFirst, "К началу чата", "Кнопки «К первому сообщению» и «К дате…» в меню чата", group: .convenience, defaultValue: true),
+        MonoFeature(K.jumpToFirst, "К началу чата", "Добавляет в меню чата переход к первому доступному сообщению и календарь", group: .convenience, defaultValue: true),
         MonoFeature(K.scheduleTemplates, "Быстрое отложенное", "Долгое нажатие на «Отправить»: через час, завтра в 9:00, свои варианты", group: .convenience),
         MonoFeature(K.quickReplies, "Шаблоны ответов", "Сохранённые фразы по «/» или кнопке у поля ввода", group: .convenience),
-        MonoFeature(K.memberMessages, "Сообщения участника", "В профиле участника группы — все его сообщения в этой группе", group: .convenience, defaultValue: true),
+        MonoFeature(K.memberMessages, "Сообщения участника", "В меню участника открывает поиск его сообщений в этой группе", group: .convenience, defaultValue: true),
         MonoFeature(K.translate, "Системный переводчик iOS", "Выбирает Apple Translation для поддерживаемых сценариев Swiftgram. После выключения используется стандартный переводчик приложения", group: .convenience),
         MonoFeature(K.deviceSync, "Синхронизация устройств", "Удалённые, правки, заметки и настройки одинаковы на iPhone и iPad через iCloud", group: .convenience),
 
         // Appearance
-        MonoFeature(K.avatarShape, "Форма аватарок", "Круг, скруглённый квадрат или квадрат", group: .appearance),
+        MonoFeature(K.avatarShape, "Форма аватарок", "Использует выбранную форму для обычных аватарок. Настройка формы появляется ниже", group: .appearance),
         MonoFeature(K.altIcons, "Иконки приложения", "Альтернативные иконки, включая маскировочные", group: .appearance),
         MonoFeature(K.compactMode, "Компактный режим", "Плотнее список чатов, меньше пузыри, отдельный размер шрифта", group: .appearance),
         MonoFeature(K.hideStoriesBar, "Скрыть истории", "Убирает панель историй над списком чатов", group: .appearance),
@@ -231,6 +231,9 @@ public enum MonoFeatures {
         K.feed,
         K.feedDedup,
         K.feedRememberPosition,
+        K.jumpToFirst,
+        K.memberMessages,
+        K.avatarShape,
     ]
 
     public static func visibleFeatures(in group: MonoFeatureGroup) -> [MonoFeature] {
@@ -247,6 +250,20 @@ public enum MonoFeatures {
 }
 
 // Thin storage layer. Shared app group so extensions (notifications, share) see the same values.
+public enum MonoAvatarShape: String, CaseIterable {
+    case circle
+    case roundedSquare
+    case square
+
+    public var title: String {
+        switch self {
+        case .circle: return "Круг"
+        case .roundedSquare: return "Скруглённый квадрат"
+        case .square: return "Квадрат"
+        }
+    }
+}
+
 public final class MonoSettings {
     public static let shared = MonoSettings()
 
@@ -382,6 +399,18 @@ public final class MonoSettings {
         }
         return true
     }
+
+    public var avatarShape: MonoAvatarShape {
+        get {
+            return defaults.string(forKey: Self.avatarShapeKey).flatMap(MonoAvatarShape.init(rawValue:)) ?? .roundedSquare
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: Self.avatarShapeKey)
+            NotificationCenter.default.post(name: Self.didChange, object: Self.avatarShapeKey)
+        }
+    }
+
+    private static let avatarShapeKey = "mono.look.avatarShape.selection"
 
     public static let didChange = Notification.Name("MonoSettingsDidChange")
 }

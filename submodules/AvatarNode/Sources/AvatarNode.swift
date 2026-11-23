@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import UIKit
 import AsyncDisplayKit
 import Display
@@ -44,6 +45,18 @@ public enum AvatarNodeClipStyle {
     case round
     case roundedRect
     case bubble
+}
+
+private func monoAvatarClipStyle(_ original: AvatarNodeClipStyle, peer: EnginePeer?, overrideImage: AvatarNodeImageOverride?, cutoutRect: CGRect?) -> AvatarNodeClipStyle {
+    guard case .round = original, peer != nil, overrideImage == nil, cutoutRect == nil,
+          MonoSettings.shared.isEnabled(MonoFeatureKey.avatarShape) else {
+        return original
+    }
+    switch MonoSettings.shared.avatarShape {
+    case .circle: return .round
+    case .roundedSquare: return .roundedRect
+    case .square: return .none
+    }
 }
 
 public final class AvatarNodeParameters: NSObject {
@@ -921,6 +934,7 @@ public final class AvatarNode: ASDisplayNode {
                 representation = peer?.smallProfileImage
             }
             
+            let clipStyle = monoAvatarClipStyle(clipStyle, peer: peer, overrideImage: overrideImage, cutoutRect: cutoutRect)
             let updatedState: AvatarNodeState = .peerAvatar(peer?.id ?? EnginePeer.Id(0), peer?.nameColor, peer?.displayLetters ?? [], representation, clipStyle, cutoutRect)
             if updatedState != self.state || overrideImage != self.overrideImage || theme !== self.theme {
                 self.state = updatedState
@@ -1085,6 +1099,7 @@ public final class AvatarNode: ASDisplayNode {
             let representation = resolved.representation
             let icon = resolved.icon
             
+            let clipStyle = monoAvatarClipStyle(clipStyle, peer: peer, overrideImage: overrideImage, cutoutRect: cutoutRect)
             let updatedState: AvatarNodeState = avatarNodePeerState(peer: peer, representation: representation, clipStyle: clipStyle, cutoutRect: cutoutRect)
             if updatedState != self.state || overrideImage != self.overrideImage || theme !== self.theme {
                 self.state = updatedState

@@ -1,5 +1,6 @@
 import SGSimpleSettings
 import Foundation
+import MonoSettings
 import UIKit
 import Postbox
 import SwiftSignalKit
@@ -6264,6 +6265,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                             f(.dismissWithoutContent)
                             self?.interfaceInteraction?.beginMessageSearch(.everything, "")
                         })))
+                        items.append(contentsOf: strongSelf.monoHistoryNavigationMenuItems())
                                                 
                         return items
                     }
@@ -6514,6 +6516,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                             f(.dismissWithoutContent)
                             self?.interfaceInteraction?.beginMessageSearch(.everything, "")
                         })))
+                        items.append(contentsOf: strongSelf.monoHistoryNavigationMenuItems())
                         
                         if threadId != 1 {
                             var canOpenClose = false

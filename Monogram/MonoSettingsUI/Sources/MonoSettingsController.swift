@@ -16,11 +16,13 @@ private final class MonoSettingsArguments {
     let toggle: (String, Bool) -> Void
     let openHistory: () -> Void
     let openFeed: () -> Void
+    let chooseAvatarShape: () -> Void
 
-    init(toggle: @escaping (String, Bool) -> Void, openHistory: @escaping () -> Void, openFeed: @escaping () -> Void) {
+    init(toggle: @escaping (String, Bool) -> Void, openHistory: @escaping () -> Void, openFeed: @escaping () -> Void, chooseAvatarShape: @escaping () -> Void) {
         self.toggle = toggle
         self.openHistory = openHistory
         self.openFeed = openFeed
+        self.chooseAvatarShape = chooseAvatarShape
     }
 }
 
@@ -28,6 +30,7 @@ private enum MonoSettingsEntry: ItemListNodeEntry {
     case header(id: Int, group: MonoFeatureGroup)
     case history(id: Int)
     case feed(id: Int)
+    case avatarShape(id: Int, shape: MonoAvatarShape)
     case feature(id: Int, feature: MonoFeature, value: Bool, enabled: Bool)
     case footer(id: Int, group: MonoFeatureGroup, text: String)
 
@@ -39,6 +42,8 @@ private enum MonoSettingsEntry: ItemListNodeEntry {
             return MonoFeatureGroup.history.rawValue
         case .feed:
             return MonoFeatureGroup.feed.rawValue
+        case .avatarShape:
+            return MonoFeatureGroup.appearance.rawValue
         case let .feature(_, feature, _, _):
             return feature.group.rawValue
         }
@@ -46,7 +51,7 @@ private enum MonoSettingsEntry: ItemListNodeEntry {
 
     var stableId: Int {
         switch self {
-        case let .header(id, _), let .history(id), let .feed(id), let .feature(id, _, _, _), let .footer(id, _, _):
+        case let .header(id, _), let .history(id), let .feed(id), let .avatarShape(id, _), let .feature(id, _, _, _), let .footer(id, _, _):
             return id
         }
     }
@@ -58,6 +63,8 @@ private enum MonoSettingsEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! MonoSettingsArguments
         switch self {
+        case let .avatarShape(_, shape):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Форма аватарок", label: shape.title, sectionId: self.section, style: .blocks, action: arguments.chooseAvatarShape)
         case .feed:
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: "Открыть ленту каналов", label: "", sectionId: self.section, style: .blocks, action: arguments.openFeed)
         case .history:
@@ -130,6 +137,9 @@ private func monoSettingsEntries(settings: MonoSettings) -> [MonoSettingsEntry] 
             // Child toggles are greyed out until their parent is on.
             let parentOn = feature.requires.map { settings.isEnabled($0) } ?? true
             entries.append(.feature(id: id(), feature: feature, value: monoDisplayedValue(feature.key, settings: settings), enabled: parentOn))
+            if feature.key == MonoFeatureKey.avatarShape, settings.isEnabled(feature.key) {
+                entries.append(.avatarShape(id: id(), shape: settings.avatarShape))
+            }
         }
         if group == .history {
             entries.append(.history(id: id()))
@@ -150,12 +160,13 @@ public func monoSettingsController(context: AccountContext) -> ViewController {
     var revisionValue = 0
     var openHistory: (() -> Void)?
     var openFeed: (() -> Void)?
+    var chooseAvatarShape: (() -> Void)?
 
     let arguments = MonoSettingsArguments(toggle: { key, value in
         monoSetValue(key, value: value, settings: settings)
         revisionValue += 1
         revision.set(revisionValue)
-    }, openHistory: { openHistory?() }, openFeed: { openFeed?() })
+    }, openHistory: { openHistory?() }, openFeed: { openFeed?() }, chooseAvatarShape: { chooseAvatarShape?() })
 
     let signal = combineLatest(context.sharedContext.presentationData, revision.get())
     |> map { presentationData, _ -> (ItemListControllerState, (ItemListNodeState, Any)) in
@@ -180,6 +191,18 @@ public func monoSettingsController(context: AccountContext) -> ViewController {
     }
     openFeed = { [weak controller] in
         controller?.push(monoFeedController(context: context))
+    }
+    chooseAvatarShape = { [weak controller] in
+        let actions = MonoAvatarShape.allCases.map { shape in
+            TextAlertAction(type: shape == settings.avatarShape ? .defaultAction : .genericAction, title: shape.title, action: {
+                settings.avatarShape = shape
+                revisionValue += 1
+                revision.set(revisionValue)
+            })
+        }
+        controller?.present(textAlertController(context: context, title: "Форма аватарок", text: "Выбери форму обычных аватарок.", actions: actions + [
+            TextAlertAction(type: .genericAction, title: "Отмена", action: {})
+        ], actionLayout: .vertical), in: .window(.root))
     }
     return controller
 }

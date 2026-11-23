@@ -127,7 +127,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                 
                 let archiveState: Signal<Bool?, NoError>
                 if MonoSettings.shared.isEnabled(MonoFeatureKey.localArchive) {
-                    archiveState = MonoHistory.archiveMenuState(postbox: context.account.postbox, peerId: peer.id)
+                    archiveState = context.engine.messages.monoHistoryArchiveState(peerId: peer.id)
                 } else {
                     archiveState = .single(nil)
                 }
@@ -399,7 +399,7 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             items.append(.action(ContextMenuActionItem(text: archiveState ? "Остановить локальный архив" : "Архивировать локально", icon: { theme in
                                 generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Archive"), color: theme.contextMenu.primaryColor)
                             }, action: { _, finish in
-                                let _ = MonoHistory.toggleArchive(postbox: context.account.postbox, peerId: peerId).startStandalone()
+                                let _ = context.engine.messages.toggleMonoHistoryArchive(peerId: peerId).startStandalone()
                                 finish(.default)
                             })))
                         }

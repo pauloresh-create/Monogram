@@ -180,3 +180,29 @@ public enum MonoHistory {
         })
     }
 }
+
+public extension TelegramEngine.Messages {
+    func monoHistoryArchiveState(peerId: EnginePeer.Id) -> Signal<Bool?, NoError> {
+        return MonoHistory.archiveMenuState(postbox: self.account.postbox, peerId: peerId)
+    }
+
+    func toggleMonoHistoryArchive(peerId: EnginePeer.Id) -> Signal<Bool, NoError> {
+        return MonoHistory.toggleArchive(postbox: self.account.postbox, peerId: peerId)
+    }
+
+    func monoHistoryConfiguration() -> Signal<MonoHistoryConfiguration, NoError> {
+        return MonoHistory.configurations(postbox: self.account.postbox)
+    }
+
+    func monoHistoryEntries() -> Signal<[MonoHistoryEntry], NoError> {
+        return MonoHistory.entries(postbox: self.account.postbox)
+    }
+
+    func setMonoHistoryLimit(inMegabytes limit: Int) -> Signal<Void, NoError> {
+        return MonoHistory.setLimit(postbox: self.account.postbox, limitInMB: limit)
+    }
+
+    func clearMonoHistory() -> Signal<Void, NoError> {
+        return MonoHistory.clear(postbox: self.account.postbox)
+    }
+}

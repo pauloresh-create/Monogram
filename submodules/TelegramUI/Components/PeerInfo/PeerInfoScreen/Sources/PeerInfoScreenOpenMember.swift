@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import UIKit
 import Display
 import AccountContext
@@ -29,6 +30,30 @@ extension PeerInfoScreenNode {
             })))
         }
         
+        if MonoSettings.shared.isEnabled(MonoFeatureKey.memberMessages) {
+            items.append(.action(ContextMenuActionItem(text: "Сообщения участника", icon: { theme in
+                generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Search"), color: theme.contextMenu.primaryColor)
+            }, action: { [weak self] controller, finish in
+                let openSearch = { [weak self] in
+                    guard let self, let navigation = self.controller?.navigationController as? NavigationController else {
+                        return
+                    }
+                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
+                        navigationController: navigation,
+                        context: self.context,
+                        chatLocation: .peer(enclosingPeer),
+                        activateMessageSearch: (.member(member.peer._asPeer()), "")
+                    ))
+                }
+                if let controller {
+                    controller.dismiss(completion: openSearch)
+                } else {
+                    finish(.dismissWithoutContent)
+                    openSearch()
+                }
+            })))
+        }
+
         if actions.contains(.editRank) {
             let actionTitle: String
             if case .creator = member.role {

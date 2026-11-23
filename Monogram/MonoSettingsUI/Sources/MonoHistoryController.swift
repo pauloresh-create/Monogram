@@ -120,7 +120,7 @@ private func monoHistoryEscapeHTML(_ text: String) -> String {
 }
 
 func monoHistoryController(context: AccountContext) -> ViewController {
-    let postbox = context.account.postbox
+    let messages = context.engine.messages
     let search = ValuePromise("", ignoreRepeated: true)
     var present: ((ViewController) -> Void)?
     var presentExport: ((URL) -> Bool)?
@@ -131,14 +131,14 @@ func monoHistoryController(context: AccountContext) -> ViewController {
             present?(textAlertController(context: context, title: "Очистить локальную историю?", text: "Сохранённые копии и версии будут удалены с этого устройства.", actions: [
                 TextAlertAction(type: .genericAction, title: "Отмена", action: {}),
                 TextAlertAction(type: .destructiveAction, title: "Очистить", action: {
-                    let _ = MonoHistory.clear(postbox: postbox).startStandalone()
+                    let _ = messages.clearMonoHistory().startStandalone()
                 })
             ]))
         },
         changeLimit: { current in
             let options = [1, 2, 4].map { size in
                 TextAlertAction(type: size == current ? .defaultAction : .genericAction, title: "\(size) МБ", action: {
-                    let _ = MonoHistory.setLimit(postbox: postbox, limitInMB: size).startStandalone()
+                    let _ = messages.setMonoHistoryLimit(inMegabytes: size).startStandalone()
                 })
             }
             present?(textAlertController(context: context, title: "Лимит истории", text: "При уменьшении лимита старые записи удаляются первыми.", actions: [TextAlertAction(type: .genericAction, title: "Отмена", action: {})] + options, actionLayout: .vertical))
@@ -157,7 +157,7 @@ func monoHistoryController(context: AccountContext) -> ViewController {
             ]))
         },
         export: { asHTML in
-            let _ = (MonoHistory.entries(postbox: postbox) |> take(1) |> deliverOnMainQueue).startStandalone(next: { entries in
+            let _ = (messages.monoHistoryEntries() |> take(1) |> deliverOnMainQueue).startStandalone(next: { entries in
                 guard !entries.isEmpty else {
                     return
                 }
@@ -189,7 +189,7 @@ func monoHistoryController(context: AccountContext) -> ViewController {
         }
     )
 
-    let signal = combineLatest(context.sharedContext.presentationData, MonoHistory.entries(postbox: postbox), MonoHistory.configurations(postbox: postbox), search.get())
+    let signal = combineLatest(context.sharedContext.presentationData, messages.monoHistoryEntries(), messages.monoHistoryConfiguration(), search.get())
     |> map { presentationData, records, configuration, query -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let queryText = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let visible = records.reversed().filter { entry in
