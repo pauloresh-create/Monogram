@@ -4,6 +4,7 @@ import SwiftSignalKit
 internal import TelegramApi
 import MtProtoKit
 import EncryptionProvider
+import MonoSettings
 
 /// Messages: added (to a history, scheduled, quick replies), edited and deleted, and ephemeral replacements; what hangs
 /// off a message: polls, media and web pages, pins, views, reactions, transcriptions, extended media; drafts and
@@ -78,6 +79,13 @@ extension ReplayContext {
         }
 
         let _ = transaction.addMessages(messages, location: location)
+        if MonoSettings.shared.isEnabled(MonoFeatureKey.localArchive), !monoHistoryConfiguration.archivePeerIds.isEmpty {
+            for message in messages {
+                if case let .Id(id) = message.id, monoHistoryConfiguration.archivePeerIds.contains(id.peerId.toInt64()) {
+                    captureMonoHistoryMessage(id, kind: .archived)
+                }
+            }
+        }
         if case .UpperHistoryBlock = location {
             for message in messages {
                 let chatPeerId = message.id.peerId
@@ -273,7 +281,21 @@ extension ReplayContext {
         deleteEphemeralMessages(transaction: transaction, peerId: peerId, ids: ids)
     }
     
+    private func captureMonoHistoryMessage(_ id: MessageId, kind: MonoHistoryEntry.Kind) {
+        guard let message = transaction.getMessage(id),
+              kind != .deleted || message.flags.contains(.Incoming),
+              let entry = MonoHistory.snapshot(message, kind: kind, transaction: transaction) else {
+            return
+        }
+        monoHistoryEntries.append(entry)
+    }
+
     func applyDeleteMessagesWithGlobalIds(_ ids: [Int32]) {
+        if MonoSettings.shared.isEnabled(MonoFeatureKey.keepDeleted) {
+            for id in transaction.messageIdsForGlobalIds(ids) {
+                captureMonoHistoryMessage(id, kind: .deleted)
+            }
+        }
         var resourceIds: [MediaResourceId] = []
         transaction.deleteMessagesWithGlobalIds(ids, forEachMedia: { media in
             addMessageMediaResourceIdsToRemove(media: media, resourceIds: &resourceIds)
@@ -285,6 +307,11 @@ extension ReplayContext {
     }
     
     func applyDeleteMessages(_ ids: [MessageId]) {
+        if MonoSettings.shared.isEnabled(MonoFeatureKey.keepDeleted) {
+            for id in ids {
+                captureMonoHistoryMessage(id, kind: .deleted)
+            }
+        }
         _internal_deleteMessages(transaction: transaction, mediaBox: mediaBox, ids: ids, manualAddMessageThreadStatsDifference: { id, add, remove in
             self.addMessageThreadStatsDifference(threadKey: id, remove: remove, addedMessagePeer: nil, addedMessageId: nil, isOutgoing: false)
         })
@@ -307,6 +334,13 @@ extension ReplayContext {
     func applyEditMessage(_ id: MessageId, _ message: StoreMessage) {
         var generatedEvent: (reactionAuthor: Peer, reaction: MessageReaction.Reaction, message: Message, timestamp: Int32)?
         transaction.updateMessage(id, update: { previousMessage in
+            if MonoSettings.shared.isEnabled(MonoFeatureKey.editHistory),
+               previousMessage.text != message.text,
+               !message.flags.contains(.CopyProtected),
+               !message.attributes.contains(where: { $0 is AutoclearTimeoutMessageAttribute || $0 is AutoremoveTimeoutMessageAttribute }),
+               let entry = MonoHistory.snapshot(previousMessage, kind: .edited, transaction: transaction, replacement: message.text, recordedAt: (message.attributes.first(where: { $0 is EditedMessageAttribute }) as? EditedMessageAttribute)?.date) {
+                monoHistoryEntries.append(entry)
+            }
             let peers: [PeerId:Peer] = previousMessage.peers.reduce([:], { current, value in
                 var current = current
                 current[value.0] = value.1
@@ -319,6 +353,9 @@ extension ReplayContext {
 
             return .update(mergedServerMessageUpdate(previous: previousMessage, updated: message))
         })
+        if MonoSettings.shared.isEnabled(MonoFeatureKey.localArchive), monoHistoryConfiguration.archivePeerIds.contains(id.peerId.toInt64()) {
+            captureMonoHistoryMessage(id, kind: .archived)
+        }
         // A fetch in flight may be bringing the message with its old content, over the edited one or, with none stored
         // here, instead of it; it stores this edit in its place (Postbox's record of recent edits,
         // `fetchedMessagesWithRecentEdits`; owner decision 2026-10-25).

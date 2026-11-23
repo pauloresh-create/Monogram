@@ -14,6 +14,7 @@ private final class AccountPresenceManagerImpl {
     let isPerformingUpdate = ValuePromise<Bool>(false, ignoreRepeated: true)
     
     private var shouldKeepOnlinePresenceDisposable: Disposable?
+    private var monoSettingsObserver: NSObjectProtocol?
     private let currentRequestDisposable = MetaDisposable()
     private var onlineTimer: SignalKitTimer?
     
@@ -22,6 +23,18 @@ private final class AccountPresenceManagerImpl {
     init(queue: Queue, shouldKeepOnlinePresence: Signal<Bool, NoError>, network: Network) {
         self.queue = queue
         self.network = network
+
+        self.monoSettingsObserver = NotificationCenter.default.addObserver(forName: MonoSettings.didChange, object: nil, queue: nil) { [weak self] notification in
+            if let key = notification.object as? String, key != MonoFeatureKey.hideOnline {
+                return
+            }
+            queue.async { [weak self] in
+                guard let self, self.wasOnline else {
+                    return
+                }
+                self.updatePresence(true)
+            }
+        }
         
         self.shouldKeepOnlinePresenceDisposable = (shouldKeepOnlinePresence
         |> distinctUntilChanged
@@ -38,6 +51,9 @@ private final class AccountPresenceManagerImpl {
     
     deinit {
         assert(self.queue.isCurrent())
+        if let monoSettingsObserver = self.monoSettingsObserver {
+            NotificationCenter.default.removeObserver(monoSettingsObserver)
+        }
         self.shouldKeepOnlinePresenceDisposable?.dispose()
         self.currentRequestDisposable.dispose()
         self.onlineTimer?.invalidate()
@@ -46,6 +62,8 @@ private final class AccountPresenceManagerImpl {
     private func updatePresence(_ requestedOnline: Bool) {
         // MARK: Monogram — ghost mode keeps reporting offline
         let isOnline = requestedOnline && !MonoSettings.shared.isEnabled(MonoFeatureKey.hideOnline)
+        self.onlineTimer?.invalidate()
+        self.onlineTimer = nil
         let request: Signal<Api.Bool, MTRpcError>
         if isOnline {
             let timer = SignalKitTimer(timeout: 30.0, repeat: false, completion: { [weak self] in
@@ -58,8 +76,6 @@ private final class AccountPresenceManagerImpl {
             timer.start()
             request = self.network.request(Api.functions.account.updateStatus(offline: .boolFalse))
         } else {
-            self.onlineTimer?.invalidate()
-            self.onlineTimer = nil
             request = self.network.request(Api.functions.account.updateStatus(offline: .boolTrue))
         }
         self.isPerformingUpdate.set(true)

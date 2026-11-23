@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
@@ -28,6 +29,9 @@ extension ChatControllerImpl {
     }
 
     func forwardMessages(forceHideNames: Bool = false, messages: [EngineRawMessage], options: ChatInterfaceForwardOptionsState? = nil, resetCurrent: Bool) { // MARK: Swiftgram
+        let useDefault = options == nil && MonoSettings.shared.isEnabled(MonoFeatureKey.forwardNoAuthor)
+        let forceHideNames = forceHideNames || useDefault
+        let options = useDefault ? ChatInterfaceForwardOptionsState(hideNames: true, hideCaptions: false, unhideNamesOnCaptionChange: false) : options
         let _ = self.presentVoiceMessageDiscardAlert(action: { [weak self] in
             guard let self else {
                 return

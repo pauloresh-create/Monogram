@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import UIKit
 import AsyncDisplayKit
 import Display
@@ -110,7 +111,9 @@ func defaultAvailableSearchPanes(isForum: Bool, hasDownloads: Bool, hasPublicPos
         result.append(.publicPosts)
     }
     result.append(.channels)
-    result.append(.apps)
+    if !MonoSettings.shared.isEnabled(MonoFeatureKey.hideAppsStorefront) {
+        result.append(.apps)
+    }
     if !isForum {
         result.append(.globalPosts)
     }

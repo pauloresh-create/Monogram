@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
@@ -12,6 +13,36 @@ import UndoUI
 import ChatScheduleTimeController
 
 extension ChatControllerImpl {
+    func monoHistoryNavigationMenuItems() -> [ContextMenuItem] {
+        guard MonoSettings.shared.isEnabled(MonoFeatureKey.jumpToFirst), let peerId = self.chatLocation.peerId else {
+            return []
+        }
+
+        let calendarItem = ContextMenuActionItem(text: "К дате…", icon: { theme in
+            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, finish in
+            finish(.dismissWithoutContent)
+            self?.openCalendarSearch(timestamp: Int32(clamping: Int64(Date().timeIntervalSince1970)), isMedia: false)
+        })
+        let firstItem = ContextMenuActionItem(text: "К началу чата", icon: { theme in
+            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] _, finish in
+            finish(.dismissWithoutContent)
+            guard let self else { return }
+            self.chatDisplayNode.dismissInput()
+            self.loadingMessage.set(.single(.generic))
+            self.messageIndexDisposable.set((self.context.engine.messages.searchMessageIdByTimestamp(peerId: peerId, threadId: self.chatLocation.threadId, timestamp: 1)
+            |> deliverOnMainQueue).startStrict(next: { [weak self] messageId in
+                guard let self else { return }
+                self.loadingMessage.set(.single(nil))
+                if let messageId {
+                    self.navigateToMessage(from: nil, to: .id(messageId, NavigateToMessageParams(timestamp: nil, quote: nil)), forceInCurrentChat: true)
+                }
+            }))
+        })
+        return [.action(firstItem), .action(calendarItem)]
+    }
+
     func openCalendarSearch(timestamp: Int32, isMedia: Bool) {
         guard let peerId = self.chatLocation.peerId else {
             return

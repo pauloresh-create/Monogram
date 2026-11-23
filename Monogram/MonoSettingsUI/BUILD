@@ -12,9 +12,11 @@ swift_library(
     ],
     deps = [
         "//Monogram/MonoSettings:MonoSettings",
+        "//Swiftgram/SGSimpleSettings:SGSimpleSettings",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/Display:Display",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
+        "//submodules/TelegramCore:TelegramCore",
         "//submodules/ItemListUI:ItemListUI",
         "//submodules/AccountContext:AccountContext",
         "//submodules/PresentationDataUtils:PresentationDataUtils",

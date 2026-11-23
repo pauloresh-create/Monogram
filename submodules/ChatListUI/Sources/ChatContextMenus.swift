@@ -125,13 +125,21 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                     return .single([])
                 }
                 
-                return context.engine.data.get(
+                let archiveState: Signal<Bool?, NoError>
+                if MonoSettings.shared.isEnabled(MonoFeatureKey.localArchive) {
+                    archiveState = context.engine.messages.monoHistoryArchiveState(peerId: peer.id)
+                } else {
+                    archiveState = .single(nil)
+                }
+                let peerSettings = context.engine.data.get(
                     TelegramEngine.EngineData.Item.Peer.IsContact(id: peer.id),
                     TelegramEngine.EngineData.Item.Peer.NotificationSettings(id: peer.id),
                     TelegramEngine.EngineData.Item.NotificationSettings.Global(),
                     TelegramEngine.EngineData.Item.Messages.PeerReadCounters(id: peer.id)
                 )
-                |> map { [weak chatListController] isContact, notificationSettings, globalNotificationSettings, readCounters -> [ContextMenuItem] in
+                return combineLatest(peerSettings, archiveState)
+                |> map { [weak chatListController] peerSettings, archiveState -> [ContextMenuItem] in
+                    let (isContact, notificationSettings, globalNotificationSettings, readCounters) = peerSettings
                     if promoInfo != nil {
                         return []
                     }
@@ -387,6 +395,15 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             }
                         }
                         
+                        if let archiveState {
+                            items.append(.action(ContextMenuActionItem(text: archiveState ? "Остановить локальный архив" : "Архивировать локально", icon: { theme in
+                                generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Archive"), color: theme.contextMenu.primaryColor)
+                            }, action: { _, finish in
+                                let _ = context.engine.messages.toggleMonoHistoryArchive(peerId: peerId).startStandalone()
+                                finish(.default)
+                            })))
+                        }
+
                         // MARK: Monogram — ghost mode actions
                         if !isSavedMessages {
                             let monoSettings = MonoSettings.shared
