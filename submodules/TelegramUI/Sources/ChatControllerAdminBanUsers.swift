@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import UIKit
 import TelegramPresentationData
 import AccountContext
@@ -598,9 +599,10 @@ extension ChatControllerImpl {
             
             var unsendPersonalMessages = false
             if options.contains(.unsendPersonal) {
+                unsendPersonalMessages = MonoSettings.shared.isEnabled(MonoFeatureKey.deleteForAllDefault)
                 canDisplayContextMenu = false
                 items.append(ActionSheetTextItem(title: self.presentationData.strings.Chat_UnsendMyMessagesAlertTitle(personalPeerName ?? "").string))
-                items.append(ActionSheetSwitchItem(title: self.presentationData.strings.Chat_UnsendMyMessages, isOn: false, action: { value in
+                items.append(ActionSheetSwitchItem(title: self.presentationData.strings.Chat_UnsendMyMessages, isOn: unsendPersonalMessages, action: { value in
                     unsendPersonalMessages = value
                 }))
             } else if options.contains(.deleteGlobally) {

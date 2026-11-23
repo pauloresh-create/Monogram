@@ -187,7 +187,7 @@ func sgPeerInfoSettingsItems(context: AccountContext, paymentsEnabled: Bool, pre
         interaction.openSettings(.swiftgram)
     }))
     // MARK: Monogram
-    items.append(PeerInfoScreenDisclosureItem(id: 2, text: "Monogram", icon: MonoSettingsIcon.image, action: {
+    items.append(PeerInfoScreenDisclosureItem(id: 2, text: "Мои функции", icon: MonoSettingsIcon.image, action: {
         interaction.openSettings(.monogram)
     }))
     return items

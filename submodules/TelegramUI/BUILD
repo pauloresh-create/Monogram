@@ -7,6 +7,7 @@ load(
 )
 
 sgdeps = [
+    "//Monogram/MonoSettings:MonoSettings",
     "//Swiftgram/SGSettingsUI:SGSettingsUI",
     "//Swiftgram/SGConfig:SGConfig",
     "//Swiftgram/SGAPIWebSettings:SGAPIWebSettings",

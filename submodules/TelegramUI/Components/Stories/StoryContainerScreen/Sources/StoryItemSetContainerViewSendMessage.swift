@@ -1,4 +1,5 @@
 import Foundation
+import MonoSettings
 import SwiftSignalKit
 import TelegramCore
 import AccountContext
@@ -644,7 +645,44 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
     }
 
     func performWithPossibleStealthModeConfirmation(view: StoryItemSetContainerComponent.View, action: @escaping () -> Void) {
-        guard let component = view.component, component.stealthModeTimeout != nil else {
+        guard let component = view.component else {
+            action()
+            return
+        }
+
+        let storyId = component.slice.item.id
+        let ownerId = component.slice.effectivePeer.id
+        if ownerId != component.context.account.peerId,
+           MonoSettings.shared.ghostApplies(MonoFeatureKey.anonymousStories, peerId: ownerId.toInt64()) {
+            let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (
+                component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: component.theme),
+                component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: component.theme) }
+            )
+            let alert = AlertScreen(
+                title: "Анонимный просмотр",
+                text: "После реакции или ответа автор истории сможет увидеть твой аккаунт.",
+                actions: [
+                    .init(title: component.strings.Common_Cancel, type: .default),
+                    .init(title: "Продолжить", type: .generic, action: { [weak view] in
+                        guard view?.component?.slice.item.id == storyId else {
+                            return
+                        }
+                        action()
+                    })
+                ],
+                updatedPresentationData: updatedPresentationData
+            )
+            alert.dismissed = { [weak self, weak view] _ in
+                self?.actionSheet = nil
+                view?.updateIsProgressPaused()
+            }
+            self.actionSheet = alert
+            view.updateIsProgressPaused()
+            component.controller()?.presentInGlobalOverlay(alert)
+            return
+        }
+
+        guard component.stealthModeTimeout != nil else {
             action()
             return
         }

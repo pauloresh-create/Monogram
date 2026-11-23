@@ -3022,7 +3022,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     self?.requestLayout(transition: .immediate)
                 },
                 accessibilityValue: active ? "Включён" : "Выключен",
-                accessibilityLabel: "Режим призрака"
+                accessibilityLabel: "Анонимность"
             ), at: composeIndex + 1)
         }
         return buttons
@@ -6985,7 +6985,7 @@ private func chatListHeaderOverflowInfo(strings: PresentationStrings) -> [AnyHas
         "compose": NavigationBarComponent.OverflowInfo(title: strings.Compose_NewMessage, iconName: "Chat List/ComposeIcon", priority: 3),
         "proxy": NavigationBarComponent.OverflowInfo(title: strings.SocksProxySetup_Title, iconName: "Chat List/ProxyShieldIcon", priority: 2),
         "story": NavigationBarComponent.OverflowInfo(title: strings.StoryFeed_AddStory, iconName: "Chat List/AddStoryIcon", priority: 1),
-        "monogramGhost": NavigationBarComponent.OverflowInfo(title: "Режим призрака", iconName: "Chat/Context Menu/EyeLocked", priority: 0),
+        "monogramGhost": NavigationBarComponent.OverflowInfo(title: "Анонимность", iconName: "Chat/Context Menu/EyeLocked", priority: 0),
         "more": NavigationBarComponent.OverflowInfo(title: strings.Common_More, iconName: nil, priority: nil),
         "settings": NavigationBarComponent.OverflowInfo(title: strings.Settings_Title, iconName: nil, priority: nil) // MARK: Swiftgram
     ]

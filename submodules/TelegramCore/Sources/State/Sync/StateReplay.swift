@@ -157,6 +157,9 @@ func replayFinalState(
     context.applyContentOperations(operations.content)
     context.applyStateAdvance(operations.stateAdvance)
     context.finalize()
+    if !context.monoHistoryEntries.isEmpty {
+        MonoHistory.save(context.monoHistoryEntries, transaction: transaction, configuration: context.monoHistoryConfiguration)
+    }
     return context.buildResult()
 }
 
@@ -184,6 +187,8 @@ final class ReplayContext {
     let encryptionProvider: EncryptionProvider
     /// Input. The one Postbox transaction every read and write of the replay goes through.
     let transaction: Transaction
+    lazy var monoHistoryConfiguration = MonoHistory.configuration(transaction: self.transaction)
+    var monoHistoryEntries: [MonoHistoryEntry] = []
     /// Input. The replayed final state: operations, side tables read by cases and steps, and the result's state.
     let finalState: AccountFinalState
     /// Input. Read by `finalize`: confirmed outgoing messages to delete if possibly delivered.

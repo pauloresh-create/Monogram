@@ -65,9 +65,15 @@ public enum MonoFeatureKey {
     public static let readOnReply = "mono.ghost.readOnReply"
     public static let anonymousStories = "mono.ghost.anonymousStories"
     public static let ghostQuickToggle = "mono.ghost.quickToggle"
+    public static let ghostMaster = "mono.ghost.master"
     public static let ghostExceptions = "mono.ghost.exceptions"
     public static let cleanUI = "mono.ui.clean"
     public static let hideSponsored = "mono.ui.hideSponsored"
+    public static let hidePremiumOffers = "mono.ui.hidePremiumOffers"
+    public static let hideGiftOffers = "mono.ui.hideGiftOffers"
+    public static let hideStarsShortcut = "mono.ui.hideStarsShortcut"
+    public static let hideBusinessShortcut = "mono.ui.hideBusinessShortcut"
+    public static let hideAppsStorefront = "mono.ui.hideAppsStorefront"
 
     public static let keepDeleted = "mono.history.keepDeleted"
     public static let keepDeletedMedia = "mono.history.keepDeletedMedia"
@@ -88,6 +94,7 @@ public enum MonoFeatureKey {
     public static let deleteForAllDefault = "mono.conv.deleteForAll"
     public static let contactNotes = "mono.conv.contactNotes"
     public static let confirmActions = "mono.conv.confirm"
+    public static let confirmCalls = "mono.conv.confirmCalls"
     public static let quickActions = "mono.conv.quickActions"
     public static let extendedProfile = "mono.conv.extendedProfile"
     public static let jumpToFirst = "mono.conv.jumpToFirst"
@@ -101,6 +108,7 @@ public enum MonoFeatureKey {
     public static let altIcons = "mono.look.altIcons"
     public static let compactMode = "mono.look.compact"
     public static let hideElements = "mono.look.hideElements"
+    public static let hideStoriesBar = "mono.look.hideStoriesBar"
     public static let customThemes = "mono.look.themes"
     public static let reduceAnimations = "mono.look.reduceAnimations"
 
@@ -119,23 +127,24 @@ public enum MonoFeatures {
 
     public static let all: [MonoFeature] = [
         // Ghost
-        MonoFeature(K.ghostQuickToggle, "Кнопка призрака", "Иконка над списком чатов включает и выключает призрак одним нажатием", group: .ghost, defaultValue: true),
+        MonoFeature(K.ghostMaster, "Анонимность", "Включает выбранные настройки. При первом включении без выбора активирует все. При выключении выбор сохраняется", group: .ghost),
+        MonoFeature(K.ghostQuickToggle, "Кнопка «Анонимность»", "Показывает быстрый переключатель в верхней панели «Чатов»", group: .ghost, defaultValue: true),
         MonoFeature(K.hideOnline, "Скрыть «в сети»", "Не отправлять сигнал «в сети». Статус определяет Telegram", group: .ghost),
         MonoFeature(K.hideTyping, "Скрыть набор текста", "Не показывать индикатор «печатает»", group: .ghost),
         MonoFeature(K.hideVoiceRecording, "Скрыть запись голосовых", "Не показывать индикатор записи голосового сообщения", group: .ghost),
         MonoFeature(K.hideVideoRecording, "Скрыть запись кружков", "Не показывать индикатор записи видеосообщения", group: .ghost),
         MonoFeature(K.hideStickerSelection, "Скрыть выбор стикеров", "Не показывать индикатор выбора стикера", group: .ghost),
         MonoFeature(K.hideUploads, "Скрыть загрузку файлов", "Не показывать индикаторы загрузки медиа и файлов", group: .ghost),
-        MonoFeature(K.hideRead, "Скрыть прочтение", "У собеседника остаётся одна галочка. Прочитать можно вручную из меню чата", group: .ghost),
+        MonoFeature(K.hideRead, "Скрыть прочтение", "Подавляет автоматическую отметку в поддерживаемых чатах. Отправить её вручную можно из меню чата", group: .ghost),
         MonoFeature(K.readOnReply, "Читать при ответе", "Когда ты отвечаешь в чате, прочтение отправляется автоматически", group: .ghost, defaultValue: true, requires: K.hideRead),
-        MonoFeature(K.anonymousStories, "Анонимные сторис", "Твой просмотр не попадает в список зрителей", group: .ghost),
-        MonoFeature(K.ghostExceptions, "Исключения", "Выбранные чаты видят тебя как обычно. Настраивается долгим нажатием на чат", group: .ghost),
+        MonoFeature(K.anonymousStories, "Анонимные сторис", "Monogram скрывает отметку просмотра. Перед отправкой реакции или ответа приложение предупреждает, что автор может увидеть твой аккаунт", group: .ghost),
+        MonoFeature(K.ghostExceptions, "Исключения", "Для выбранных чатов действуют обычные индикаторы, прочтения и просмотры историй. Чаты выбираются долгим нажатием", group: .ghost),
 
         // History
-        MonoFeature(K.keepDeleted, "Сохранять удалённые", "Удалённые собеседником сообщения остаются с пометкой 🗑", group: .history),
+        MonoFeature(K.keepDeleted, "Сохранять удалённые", "Сохраняет текст обычных входящих сообщений в локальной истории", group: .history),
         MonoFeature(K.keepDeletedMedia, "Сохранять медиа удалённых", "Фото, видео и голосовые тоже остаются, если успели загрузиться", group: .history, requires: K.keepDeleted),
-        MonoFeature(K.editHistory, "История правок", "У изменённых сообщений можно посмотреть все прошлые версии", group: .history),
-        MonoFeature(K.localArchive, "Локальный архив", "Переписка выбранных чатов хранится на телефоне и не стирается при очистке кэша", group: .history),
+        MonoFeature(K.editHistory, "История правок", "Записывает прежний и новый текст в локальную историю", group: .history),
+        MonoFeature(K.localArchive, "Локальный архив", "Сохраняет текст в выбранных чатах отдельно от кэша. Чаты выбираются долгим нажатием", group: .history),
         MonoFeature(K.messageFilters, "Фильтры сообщений", "Скрывать сообщения по словам или от конкретных людей в группах", group: .history),
 
         // Privacy
@@ -149,9 +158,10 @@ public enum MonoFeatures {
         // Convenience
         MonoFeature(K.customMenu, "Своё меню сообщения", "Выбери, какие пункты показывать при долгом нажатии и в каком порядке", group: .convenience),
         MonoFeature(K.unlimitedPins, "Без лимита закрепов", "Закрепляй сколько угодно чатов. Сверх лимита — только на этом телефоне", group: .convenience),
-        MonoFeature(K.forwardNoAuthor, "Пересылка без автора", "Кнопка «Переслать без подписи» в меню и окне пересылки", group: .convenience, defaultValue: true),
-        MonoFeature(K.deleteForAllDefault, "«Удалить для всех» сразу", "Галочка удаления у собеседника стоит по умолчанию", group: .convenience),
+        MonoFeature(K.forwardNoAuthor, "Пересылка без автора", "По умолчанию скрывает имя автора при новой пересылке", group: .convenience),
+        MonoFeature(K.deleteForAllDefault, "«Удалить для всех» сразу", "Предварительно включает удаление своих сообщений у собеседника, когда доступен переключатель", group: .convenience),
         MonoFeature(K.contactNotes, "Заметки о людях", "Своё имя и заметка к любому человеку, видны только тебе", group: .convenience),
+        MonoFeature(K.confirmCalls, "Подтверждать звонки", "Спрашивает перед исходящим аудио- или видеозвонком", group: .convenience),
         MonoFeature(K.confirmActions, "Подтверждения", "Спрашивать перед звонком, отправкой стикера, GIF или голосового", group: .convenience),
         MonoFeature(K.quickActions, "Быстрые действия", "Двойной тап по сообщению, копирование части текста, «В Избранное» в один тап", group: .convenience, defaultValue: true),
         MonoFeature(K.extendedProfile, "Подробный профиль", "ID, дата-центр, примерная дата регистрации и первое сообщение в чате", group: .convenience, defaultValue: true),
@@ -159,21 +169,27 @@ public enum MonoFeatures {
         MonoFeature(K.scheduleTemplates, "Быстрое отложенное", "Долгое нажатие на «Отправить»: через час, завтра в 9:00, свои варианты", group: .convenience),
         MonoFeature(K.quickReplies, "Шаблоны ответов", "Сохранённые фразы по «/» или кнопке у поля ввода", group: .convenience),
         MonoFeature(K.memberMessages, "Сообщения участника", "В профиле участника группы — все его сообщения в этой группе", group: .convenience, defaultValue: true),
-        MonoFeature(K.translate, "Перевод", "Перевод входящих и исходящих встроенным переводчиком iOS, без внешних серверов", group: .convenience),
+        MonoFeature(K.translate, "Системный переводчик iOS", "Выбирает Apple Translation для поддерживаемых сценариев Swiftgram. После выключения используется стандартный переводчик приложения", group: .convenience),
         MonoFeature(K.deviceSync, "Синхронизация устройств", "Удалённые, правки, заметки и настройки одинаковы на iPhone и iPad через iCloud", group: .convenience),
 
         // Appearance
         MonoFeature(K.avatarShape, "Форма аватарок", "Круг, скруглённый квадрат или квадрат", group: .appearance),
         MonoFeature(K.altIcons, "Иконки приложения", "Альтернативные иконки, включая маскировочные", group: .appearance),
         MonoFeature(K.compactMode, "Компактный режим", "Плотнее список чатов, меньше пузыри, отдельный размер шрифта", group: .appearance),
+        MonoFeature(K.hideStoriesBar, "Скрыть истории", "Убирает панель историй над списком чатов", group: .appearance),
         MonoFeature(K.hideElements, "Скрыть лишнее", "Сторис, реакции, счётчики просмотров, Premium-значки, эмодзи-статусы", group: .appearance),
         MonoFeature(K.cleanUI, "Без Premium и подарков", "Убрать баннеры Premium, подарки, звёзды и витрину мини-приложений", group: .appearance, defaultValue: true),
         MonoFeature(K.hideSponsored, "Без рекламы в каналах", "Не загружать спонсорские сообщения", group: .appearance, defaultValue: true),
+        MonoFeature(K.hidePremiumOffers, "Скрыть Premium", "Убирает предложение Premium из настроек", group: .appearance),
+        MonoFeature(K.hideGiftOffers, "Скрыть витрину подарков", "Убирает пункт Telegram Gifts из настроек", group: .appearance),
+        MonoFeature(K.hideStarsShortcut, "Скрыть звёзды", "Убирает пункт звёзд из настроек", group: .appearance),
+        MonoFeature(K.hideBusinessShortcut, "Скрыть бизнес-функции", "Убирает пункт Telegram Business из настроек", group: .appearance),
+        MonoFeature(K.hideAppsStorefront, "Скрыть витрину приложений", "Убирает вкладку приложений из глобального поиска", group: .appearance),
         MonoFeature(K.customThemes, "Свои темы", "Цвет акцента, фон, шрифт, экспорт и импорт темы", group: .appearance),
         MonoFeature(K.reduceAnimations, "Меньше анимаций", "Без полноэкранных эффектов, статичные стикеры, экономия батареи", group: .appearance),
 
         // Feed
-        MonoFeature(K.feed, "Лента постов", "Вкладка с постами из выбранных каналов в одной ленте", group: .feed),
+        MonoFeature(K.feed, "Лента постов", "Открывает подборки с постами выбранных каналов в разделе «Мои функции»", group: .feed),
         MonoFeature(K.feedDedup, "Убирать дубли", "Один и тот же репост из разных каналов показывается один раз", group: .feed, defaultValue: true, requires: K.feed),
         MonoFeature(K.feedRememberPosition, "Помнить место", "Лента открывается там, где ты остановился", group: .feed, defaultValue: true, requires: K.feed),
 
@@ -186,6 +202,7 @@ public enum MonoFeatures {
 
     /// Features that already work in this build; the settings screen shows only these.
     public static let implemented: Set<String> = [
+        K.ghostMaster,
         K.ghostQuickToggle,
         K.hideOnline,
         K.hideTyping,
@@ -198,6 +215,22 @@ public enum MonoFeatures {
         K.anonymousStories,
         K.ghostExceptions,
         K.hideSponsored,
+        K.hidePremiumOffers,
+        K.hideGiftOffers,
+        K.hideStarsShortcut,
+        K.hideBusinessShortcut,
+        K.hideAppsStorefront,
+        K.keepDeleted,
+        K.editHistory,
+        K.localArchive,
+        K.forwardNoAuthor,
+        K.deleteForAllDefault,
+        K.confirmCalls,
+        K.translate,
+        K.hideStoriesBar,
+        K.feed,
+        K.feedDedup,
+        K.feedRememberPosition,
     ]
 
     public static func visibleFeatures(in group: MonoFeatureGroup) -> [MonoFeature] {
@@ -237,6 +270,12 @@ public final class MonoSettings {
     }
 
     public func isEnabled(_ key: String) -> Bool {
+        if key == MonoFeatureKey.ghostMaster {
+            return isGhostActive
+        }
+        if MonoSettings.ghostKeys.contains(key) && defaults.bool(forKey: MonoSettings.ghostPausedKey) {
+            return false
+        }
         guard let feature = MonoFeatures.feature(forKey: key) else {
             return false
         }
@@ -248,6 +287,9 @@ public final class MonoSettings {
 
     /// Raw stored value, ignoring the `requires` chain (used by the settings screen).
     public func storedValue(_ key: String) -> Bool {
+        if key == MonoFeatureKey.ghostMaster {
+            return isGhostActive
+        }
         if defaults.object(forKey: key) != nil {
             return defaults.bool(forKey: key)
         }
@@ -255,11 +297,15 @@ public final class MonoSettings {
     }
 
     public func set(_ key: String, _ value: Bool) {
+        if key == MonoFeatureKey.ghostMaster {
+            setGhost(value)
+            return
+        }
         defaults.set(value, forKey: key)
         NotificationCenter.default.post(name: MonoSettings.didChange, object: key)
     }
 
-    // Master ghost switch from the chat list button: flips all ghost features at once.
+    private static let ghostPausedKey = "mono.ghost.paused"
     private static let ghostKeys = [
         MonoFeatureKey.hideOnline,
         MonoFeatureKey.hideTyping,
@@ -272,13 +318,16 @@ public final class MonoSettings {
     ]
 
     public var isGhostActive: Bool {
-        return MonoSettings.ghostKeys.contains { isEnabled($0) }
+        return !defaults.bool(forKey: MonoSettings.ghostPausedKey) && MonoSettings.ghostKeys.contains { storedValue($0) }
     }
 
     public func setGhost(_ active: Bool) {
-        for key in MonoSettings.ghostKeys {
-            defaults.set(active, forKey: key)
+        if active && !MonoSettings.ghostKeys.contains(where: { storedValue($0) }) {
+            for key in MonoSettings.ghostKeys {
+                defaults.set(true, forKey: key)
+            }
         }
+        defaults.set(!active, forKey: MonoSettings.ghostPausedKey)
         NotificationCenter.default.post(name: MonoSettings.didChange, object: nil)
     }
 
