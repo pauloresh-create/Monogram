@@ -216,8 +216,20 @@ private final class MonoFeedModel {
         }
         self.requests.set((combineLatest(requests) |> take(1) |> deliverOnMainQueue).start(next: { [weak self] batches in
             guard let self, self.current.current.id == collectionId else { return }
-            let posts = batches.flatMap { $0 }.sorted { lhs, rhs in
-                lhs.timestamp == rhs.timestamp ? lhs.id > rhs.id : lhs.timestamp > rhs.timestamp
+            var posts: [MonoFeedPost] = []
+            for batch in batches {
+                posts.append(contentsOf: batch)
+            }
+            posts.sort { lhs, rhs in
+                if lhs.timestamp != rhs.timestamp {
+                    return lhs.timestamp > rhs.timestamp
+                }
+                let lhsPeer = lhs.id.peerId.toInt64()
+                let rhsPeer = rhs.id.peerId.toInt64()
+                if lhsPeer != rhsPeer {
+                    return lhsPeer > rhsPeer
+                }
+                return lhs.id.id > rhs.id.id
             }
             self.update { state in
                 state.loading = false
@@ -398,8 +410,19 @@ func monoFeedController(context: AccountContext) -> ViewController {
         controller.present(textAlertController(context: context, title: post.channel, text: preview, actions: [
             TextAlertAction(type: .genericAction, title: "Закрыть", action: {}),
             TextAlertAction(type: .defaultAction, title: "Открыть в канале", action: { [weak controller] in
-                guard let navigation = controller?.navigationController as? NavigationController else { return }
-                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigation, context: context, chatLocation: .peer(id: post.id.peerId), subject: .message(id: .id(post.id), highlight: nil, timecode: nil, setupReply: false), keepStack: .always))
+                let peer = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: post.id.peerId))
+                let _ = (peer |> take(1) |> deliverOnMainQueue).startStandalone(next: { [weak controller] peer in
+                    guard let peer, let navigation = controller?.navigationController as? NavigationController else {
+                        return
+                    }
+                    context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
+                        navigationController: navigation,
+                        context: context,
+                        chatLocation: .peer(peer),
+                        subject: .message(id: .id(post.id), highlight: nil, timecode: nil, setupReply: false),
+                        keepStack: .always
+                    ))
+                })
             })
         ], actionLayout: .vertical), in: .window(.root))
     }

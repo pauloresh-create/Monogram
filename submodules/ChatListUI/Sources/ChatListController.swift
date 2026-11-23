@@ -3012,7 +3012,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         let settings = MonoSettings.shared
         if case .chatList(.root) = context.location,
            settings.isEnabled(MonoFeatureKey.ghostQuickToggle),
-           let composeIndex = buttons.firstIndex(where: { $0.id == "compose" }) {
+           let composeIndex = buttons.firstIndex(where: { $0.id == AnyHashable("compose") }) {
             let active = settings.isGhostActive
             buttons.insert(NavigationBarComponent.Button(
                 id: "monogramGhost",
