@@ -1,4 +1,5 @@
 import SGSimpleSettings // MARK: Swiftgram
+import MonoSettings
 
 import Foundation
 import UIKit
@@ -2496,6 +2497,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        if case .chatList(.root) = self.location {
+            self.requestLayout(transition: .immediate)
+        }
                 
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
@@ -3003,6 +3007,27 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     
+    private func rightHeaderButtons(for context: ChatListLocationContext) -> [NavigationBarComponent.Button] {
+        var buttons = context.rightButtons
+        let settings = MonoSettings.shared
+        if case .chatList(.root) = context.location,
+           settings.isEnabled(MonoFeatureKey.ghostQuickToggle),
+           let composeIndex = buttons.firstIndex(where: { $0.id == "compose" }) {
+            let active = settings.isGhostActive
+            buttons.insert(NavigationBarComponent.Button(
+                id: "monogramGhost",
+                content: .icon(imageName: active ? "Chat/Context Menu/EyeLocked" : "Chat/Context Menu/Eye"),
+                action: { [weak self] _ in
+                    settings.setGhost(!settings.isGhostActive)
+                    self?.requestLayout(transition: .immediate)
+                },
+                accessibilityValue: active ? "Включён" : "Выключен",
+                accessibilityLabel: "Режим призрака"
+            ), at: composeIndex + 1)
+        }
+        return buttons
+    }
+
     func updateHeaderContent() -> (primaryContent: ChatListHeaderComponent.Content?, secondaryContent: ChatListHeaderComponent.Content?) {
         var primaryContent: ChatListHeaderComponent.Content?
         if let primaryContext = self.primaryContext {
@@ -3015,7 +3040,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 titleComponent: primaryContext.chatTitleComponent.flatMap { AnyComponent<Empty>($0) },
                 chatListTitle: primaryContext.chatListTitle,
                 leftButton: primaryContext.leftButton,
-                rightButtons: primaryContext.rightButtons,
+                rightButtons: self.rightHeaderButtons(for: primaryContext),
                 backPressed: displayBackButton ? { [weak self] in
                     guard let self else {
                         return
@@ -6960,6 +6985,7 @@ private func chatListHeaderOverflowInfo(strings: PresentationStrings) -> [AnyHas
         "compose": NavigationBarComponent.OverflowInfo(title: strings.Compose_NewMessage, iconName: "Chat List/ComposeIcon", priority: 3),
         "proxy": NavigationBarComponent.OverflowInfo(title: strings.SocksProxySetup_Title, iconName: "Chat List/ProxyShieldIcon", priority: 2),
         "story": NavigationBarComponent.OverflowInfo(title: strings.StoryFeed_AddStory, iconName: "Chat List/AddStoryIcon", priority: 1),
+        "monogramGhost": NavigationBarComponent.OverflowInfo(title: "Режим призрака", iconName: "Chat/Context Menu/EyeLocked", priority: 0),
         "more": NavigationBarComponent.OverflowInfo(title: strings.Common_More, iconName: nil, priority: nil),
         "settings": NavigationBarComponent.OverflowInfo(title: strings.Settings_Title, iconName: nil, priority: nil) // MARK: Swiftgram
     ]

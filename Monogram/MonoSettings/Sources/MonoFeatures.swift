@@ -57,6 +57,10 @@ public struct MonoFeature: Equatable {
 public enum MonoFeatureKey {
     public static let hideOnline = "mono.ghost.hideOnline"
     public static let hideTyping = "mono.ghost.hideTyping"
+    public static let hideVoiceRecording = "mono.ghost.hideVoiceRecording"
+    public static let hideVideoRecording = "mono.ghost.hideVideoRecording"
+    public static let hideStickerSelection = "mono.ghost.hideStickerSelection"
+    public static let hideUploads = "mono.ghost.hideUploads"
     public static let hideRead = "mono.ghost.hideRead"
     public static let readOnReply = "mono.ghost.readOnReply"
     public static let anonymousStories = "mono.ghost.anonymousStories"
@@ -116,8 +120,12 @@ public enum MonoFeatures {
     public static let all: [MonoFeature] = [
         // Ghost
         MonoFeature(K.ghostQuickToggle, "Кнопка призрака", "Иконка над списком чатов включает и выключает призрак одним нажатием", group: .ghost, defaultValue: true),
-        MonoFeature(K.hideOnline, "Скрыть «в сети»", "Собеседники видят «был(а) недавно», даже когда ты в приложении", group: .ghost),
-        MonoFeature(K.hideTyping, "Скрыть «печатает»", "Не показывать, что ты печатаешь, записываешь голосовое или выбираешь стикер", group: .ghost),
+        MonoFeature(K.hideOnline, "Скрыть «в сети»", "Не отправлять сигнал «в сети». Статус определяет Telegram", group: .ghost),
+        MonoFeature(K.hideTyping, "Скрыть набор текста", "Не показывать индикатор «печатает»", group: .ghost),
+        MonoFeature(K.hideVoiceRecording, "Скрыть запись голосовых", "Не показывать индикатор записи голосового сообщения", group: .ghost),
+        MonoFeature(K.hideVideoRecording, "Скрыть запись кружков", "Не показывать индикатор записи видеосообщения", group: .ghost),
+        MonoFeature(K.hideStickerSelection, "Скрыть выбор стикеров", "Не показывать индикатор выбора стикера", group: .ghost),
+        MonoFeature(K.hideUploads, "Скрыть загрузку файлов", "Не показывать индикаторы загрузки медиа и файлов", group: .ghost),
         MonoFeature(K.hideRead, "Скрыть прочтение", "У собеседника остаётся одна галочка. Прочитать можно вручную из меню чата", group: .ghost),
         MonoFeature(K.readOnReply, "Читать при ответе", "Когда ты отвечаешь в чате, прочтение отправляется автоматически", group: .ghost, defaultValue: true, requires: K.hideRead),
         MonoFeature(K.anonymousStories, "Анонимные сторис", "Твой просмотр не попадает в список зрителей", group: .ghost),
@@ -178,8 +186,13 @@ public enum MonoFeatures {
 
     /// Features that already work in this build; the settings screen shows only these.
     public static let implemented: Set<String> = [
+        K.ghostQuickToggle,
         K.hideOnline,
         K.hideTyping,
+        K.hideVoiceRecording,
+        K.hideVideoRecording,
+        K.hideStickerSelection,
+        K.hideUploads,
         K.hideRead,
         K.readOnReply,
         K.anonymousStories,
@@ -208,6 +221,15 @@ public final class MonoSettings {
 
     public init(defaults: UserDefaults? = nil) {
         self.defaults = defaults ?? MonoSettings.makeDefaults()
+        // The old typing switch covered all these activities. Preserve its value on upgrade.
+        if self.defaults.object(forKey: MonoFeatureKey.hideTyping) != nil {
+            let hideActivity = self.defaults.bool(forKey: MonoFeatureKey.hideTyping)
+            for key in [MonoFeatureKey.hideVoiceRecording, MonoFeatureKey.hideVideoRecording, MonoFeatureKey.hideStickerSelection, MonoFeatureKey.hideUploads] {
+                if self.defaults.object(forKey: key) == nil {
+                    self.defaults.set(hideActivity, forKey: key)
+                }
+            }
+        }
     }
 
     private static func makeDefaults() -> UserDefaults {
@@ -221,18 +243,15 @@ public final class MonoSettings {
         if let parent = feature.requires, !isEnabled(parent) {
             return false
         }
-        if defaults.object(forKey: key) == nil {
-            return feature.defaultValue
-        }
-        return defaults.bool(forKey: key)
+        return storedValue(feature.key)
     }
 
     /// Raw stored value, ignoring the `requires` chain (used by the settings screen).
     public func storedValue(_ key: String) -> Bool {
-        guard defaults.object(forKey: key) != nil else {
-            return MonoFeatures.feature(forKey: key)?.defaultValue ?? false
+        if defaults.object(forKey: key) != nil {
+            return defaults.bool(forKey: key)
         }
-        return defaults.bool(forKey: key)
+        return MonoFeatures.feature(forKey: key)?.defaultValue ?? false
     }
 
     public func set(_ key: String, _ value: Bool) {
@@ -241,14 +260,26 @@ public final class MonoSettings {
     }
 
     // Master ghost switch from the chat list button: flips all ghost features at once.
-    private static let ghostKeys = [MonoFeatureKey.hideOnline, MonoFeatureKey.hideTyping, MonoFeatureKey.hideRead, MonoFeatureKey.anonymousStories]
+    private static let ghostKeys = [
+        MonoFeatureKey.hideOnline,
+        MonoFeatureKey.hideTyping,
+        MonoFeatureKey.hideVoiceRecording,
+        MonoFeatureKey.hideVideoRecording,
+        MonoFeatureKey.hideStickerSelection,
+        MonoFeatureKey.hideUploads,
+        MonoFeatureKey.hideRead,
+        MonoFeatureKey.anonymousStories,
+    ]
 
     public var isGhostActive: Bool {
         return MonoSettings.ghostKeys.contains { isEnabled($0) }
     }
 
     public func setGhost(_ active: Bool) {
-        MonoSettings.ghostKeys.forEach { set($0, active) }
+        for key in MonoSettings.ghostKeys {
+            defaults.set(active, forKey: key)
+        }
+        NotificationCenter.default.post(name: MonoSettings.didChange, object: nil)
     }
 
     // Ghost exceptions: chats (raw PeerId.toInt64() values) that see you normally.

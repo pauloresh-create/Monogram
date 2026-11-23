@@ -12,12 +12,26 @@ name: Monogram build
 
 on:
   workflow_dispatch:
+    inputs:
+      configuration:
+        description: Build configuration
+        type: choice
+        default: auto
+        options:
+          - auto
+          - debug_arm64
+          - release_arm64
+
+permissions:
+  contents: read
 
 jobs:
   build:
     # Xcode 27 image (macOS 27, Apple Silicon); versions.json pins Xcode 27.1
     runs-on: xcode-27
     timeout-minutes: 360
+    env:
+      BUILD_CONFIGURATION: ${{ (inputs.configuration != '' && inputs.configuration != 'auto') && inputs.configuration || (github.ref_name == 'monogram/release-1' && 'debug_arm64' || 'release_arm64') }}
 
     steps:
       - uses: actions/checkout@v4
@@ -83,21 +97,11 @@ jobs:
             --continueOnError \
             --configurationPath=monogram-configuration.json \
             --codesigningInformationPath=build-system/fake-codesigning \
-            --configuration=release_arm64 \
-            --buildNumber="$BUILD_NUMBER" 2>&1 | tee build.log
-          test "${PIPESTATUS[0]}" -eq 0
+            --configuration="$BUILD_CONFIGURATION" \
+            --buildNumber="$BUILD_NUMBER"
           mkdir -p out
           # The app target is //Telegram:Swiftgram, so the IPA is Swiftgram.ipa
           cp bazel-bin/Telegram/Swiftgram.ipa out/Monogram.ipa
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: /Users/Shared/telegram-ios/build.log
-          if-no-files-found: ignore
-          retention-days: 7
 
       # The IPA contains your api_hash and the repo is public, so it is uploaded
       # only inside an AES-256 zip locked with the IPA_PASSWORD secret (open with 7-Zip).

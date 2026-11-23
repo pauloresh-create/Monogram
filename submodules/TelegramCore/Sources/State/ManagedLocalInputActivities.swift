@@ -148,12 +148,24 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
             if peerId == accountPeerId {
                 return .complete()
             }
-            // MARK: Monogram — ghost mode: no typing / recording indicators (group call speaking still goes out)
-            if MonoSettings.shared.ghostApplies(MonoFeatureKey.hideTyping, peerId: peerId.toInt64()) {
-                if case .speakingInGroupCall? = activity {
-                } else {
-                    return .complete()
-                }
+            // MARK: Monogram - hide the selected activity indicators.
+            let activityPrivacyKey: String?
+            switch activity {
+            case .typingText?:
+                activityPrivacyKey = MonoFeatureKey.hideTyping
+            case .recordingVoice?:
+                activityPrivacyKey = MonoFeatureKey.hideVoiceRecording
+            case .recordingInstantVideo?:
+                activityPrivacyKey = MonoFeatureKey.hideVideoRecording
+            case .choosingSticker?:
+                activityPrivacyKey = MonoFeatureKey.hideStickerSelection
+            case .uploadingFile?, .uploadingPhoto?, .uploadingVideo?, .uploadingInstantVideo?:
+                activityPrivacyKey = MonoFeatureKey.hideUploads
+            case .playingGame?, .interactingWithEmoji?, .seeingEmojiInteraction?, .speakingInGroupCall?, nil:
+                activityPrivacyKey = nil
+            }
+            if let activityPrivacyKey, MonoSettings.shared.ghostApplies(activityPrivacyKey, peerId: peerId.toInt64()) {
+                return .complete()
             }
             if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                 if let activity = activity {
